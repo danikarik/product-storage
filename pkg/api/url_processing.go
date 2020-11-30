@@ -46,6 +46,17 @@ func (s *server) readCSV(r io.Reader) error {
 	reader := csv.NewReader(r)
 	reader.Comma = ';'
 
+	// First read header
+	header, err := reader.Read()
+	if err != nil {
+		return err
+	}
+
+	// Check format "PRODUCT NAME;PRICE"
+	if len(header) != 2 || header[0] != "PRODUCT NAME" || header[1] != "PRICE" {
+		return errors.New("invalid data format")
+	}
+
 	for {
 		row, err := reader.Read()
 		if errors.Is(err, io.EOF) {
@@ -55,6 +66,7 @@ func (s *server) readCSV(r io.Reader) error {
 			return err
 		}
 
+		// Save it
 		log.Println(row)
 	}
 
