@@ -38,6 +38,8 @@ func TestFetchData(t *testing.T) {
 			r.NoError(conn.Connect(ctx))
 			defer conn.Disconnect(ctx)
 
+			r.NoError(conn.Database("productstore_test").Drop(ctx))
+
 			s := &server{
 				timeout: _defaultTimeout,
 				hclient: &http.Client{},
@@ -74,6 +76,8 @@ func TestReadCSV(t *testing.T) {
 			r.NoError(err)
 			r.NoError(conn.Connect(ctx))
 			defer conn.Disconnect(ctx)
+
+			r.NoError(conn.Database("productstore_test").Drop(ctx))
 
 			s := &server{
 				timeout: _defaultTimeout,

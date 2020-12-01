@@ -76,11 +76,10 @@ func (s *server) readCSV(ctx context.Context, r io.Reader) error {
 			return fmt.Errorf("%s: %w", row[0], err)
 		}
 
-		prod := &repo.Product{
-			Name:      row[0],
-			Price:     price,
-			UpdatedAt: now,
-		}
+		prod := repo.NewProduct()
+		prod.Name = row[0]
+		prod.Price = price
+		prod.UpdatedAt = now
 
 		if err := s.repo.SaveProduct(ctx, prod); err != nil {
 			return err
