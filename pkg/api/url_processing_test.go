@@ -6,7 +6,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/danikarik/product-storage/pkg/repo"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func TestFetchData(t *testing.T) {
@@ -27,13 +30,21 @@ func TestFetchData(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			r := require.New(t)
+
+			ctx := context.Background()
+
+			conn, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+			r.NoError(err)
+			r.NoError(conn.Connect(ctx))
+			defer conn.Disconnect(ctx)
+
 			s := &server{
 				timeout: _defaultTimeout,
 				hclient: &http.Client{},
+				repo:    repo.NewMongoRepo("productstore_test", conn),
 			}
 
-			err := s.fetchData(context.Background(), tc.URL)
-			r.NoError(err)
+			r.NoError(s.fetchData(context.Background(), tc.URL))
 		})
 	}
 }
@@ -56,14 +67,25 @@ func TestReadCSV(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			r := require.New(t)
-			s := &server{}
+
+			ctx := context.Background()
+
+			conn, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
+			r.NoError(err)
+			r.NoError(conn.Connect(ctx))
+			defer conn.Disconnect(ctx)
+
+			s := &server{
+				timeout: _defaultTimeout,
+				hclient: &http.Client{},
+				repo:    repo.NewMongoRepo("productstore_test", conn),
+			}
 
 			file, err := os.Open(tc.Path)
 			r.NoError(err)
 			defer file.Close()
 
-			err = s.readCSV(file)
-			r.NoError(err)
+			r.NoError(s.readCSV(context.Background(), file))
 		})
 	}
 }

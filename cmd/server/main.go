@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -11,24 +12,43 @@ import (
 	"time"
 
 	"github.com/danikarik/product-storage/pkg/api"
+	"github.com/danikarik/product-storage/pkg/repo"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	addr    = flag.String("http.addr", ":8080", "address for listening")
+	addr    = flag.String("http.addr", ":8080", "address to listen")
+	dbhost  = flag.String("db.host", "mongodb://localhost:27017", "mongo host address")
 	timeout = flag.Duration("fetch.timeout", 30*time.Second, "address for listening")
 )
 
 func main() {
+	ctx := context.Background()
+
 	flag.Parse()
 
 	listener, err := net.Listen("tcp", *addr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("net listener: %v", err)
 	}
 
+	conn, err := mongo.NewClient(options.Client().ApplyURI(*dbhost))
+	if err != nil {
+		log.Fatalf("mongo client: %v", err)
+	}
+
+	if err := conn.Connect(ctx); err != nil {
+		log.Fatalf("mongo connection: %v", err)
+	}
+	defer conn.Disconnect(ctx)
+
 	var (
-		srv  = api.NewServer(&api.Options{Timeout: *timeout})
 		exit = make(chan error, 1)
+		srv  = api.NewServer(
+			repo.NewMongoRepo("productstore", conn),
+			&api.Options{Timeout: *timeout},
+		)
 	)
 
 	go func() {

@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"io"
-	"log"
 	"net/http"
+	"strconv"
+	"time"
 
+	"github.com/danikarik/product-storage/pkg/repo"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -35,14 +38,14 @@ func (s *server) fetchData(ctx context.Context, url string) error {
 		return status.Errorf(codes.Internal, "wrong status: %d", resp.StatusCode)
 	}
 
-	if err := s.readCSV(resp.Body); err != nil {
+	if err := s.readCSV(ctx, resp.Body); err != nil {
 		return status.Errorf(codes.Internal, "reading csv: %d", resp.StatusCode)
 	}
 
 	return nil
 }
 
-func (s *server) readCSV(r io.Reader) error {
+func (s *server) readCSV(ctx context.Context, r io.Reader) error {
 	reader := csv.NewReader(r)
 	reader.Comma = ';'
 
@@ -57,6 +60,8 @@ func (s *server) readCSV(r io.Reader) error {
 		return errors.New("invalid data format")
 	}
 
+	now := time.Now().UTC()
+
 	for {
 		row, err := reader.Read()
 		if errors.Is(err, io.EOF) {
@@ -66,8 +71,20 @@ func (s *server) readCSV(r io.Reader) error {
 			return err
 		}
 
-		// Save it
-		log.Println(row)
+		price, err := strconv.ParseFloat(row[1], 64)
+		if err != nil {
+			return fmt.Errorf("%s: %w", row[0], err)
+		}
+
+		prod := &repo.Product{
+			Name:      row[0],
+			Price:     price,
+			UpdatedAt: now,
+		}
+
+		if err := s.repo.SaveProduct(ctx, prod); err != nil {
+			return err
+		}
 	}
 
 	return nil
