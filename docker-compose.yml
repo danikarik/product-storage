@@ -1,0 +1,31 @@
+version: "3.8"
+services:
+
+  mongo:
+    image: mongo
+
+  server1:
+    build: .
+    ports:
+      - 50051:50051
+    command: --http.addr=:50051 --db.host=mongodb://mongo:27017
+    links:
+      - mongo
+
+  server2:
+    build: .
+    ports:
+      - 50052:50052
+    command: --http.addr=:50052 --db.host=mongodb://mongo:27017
+    links:
+      - mongo
+
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - 8080:80
+    links:
+      - server1
+      - server2

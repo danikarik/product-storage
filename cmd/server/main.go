@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	addr    = flag.String("http.addr", ":8080", "address to listen")
+	addr    = flag.String("http.addr", ":50051", "address to listen")
 	dbhost  = flag.String("db.host", "mongodb://localhost:27017", "mongo host address")
 	timeout = flag.Duration("fetch.timeout", 30*time.Second, "address for listening")
 )
