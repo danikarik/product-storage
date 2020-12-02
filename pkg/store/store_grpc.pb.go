@@ -18,6 +18,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type StoreClient interface {
 	Fetch(ctx context.Context, in *FetchRequest, opts ...grpc.CallOption) (*FetchResponse, error)
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 }
 
 type storeClient struct {
@@ -37,11 +38,21 @@ func (c *storeClient) Fetch(ctx context.Context, in *FetchRequest, opts ...grpc.
 	return out, nil
 }
 
+func (c *storeClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
+	out := new(ListResponse)
+	err := c.cc.Invoke(ctx, "/store.Store/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StoreServer is the server API for Store service.
 // All implementations must embed UnimplementedStoreServer
 // for forward compatibility
 type StoreServer interface {
 	Fetch(context.Context, *FetchRequest) (*FetchResponse, error)
+	List(context.Context, *ListRequest) (*ListResponse, error)
 	mustEmbedUnimplementedStoreServer()
 }
 
@@ -51,6 +62,9 @@ type UnimplementedStoreServer struct {
 
 func (UnimplementedStoreServer) Fetch(context.Context, *FetchRequest) (*FetchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Fetch not implemented")
+}
+func (UnimplementedStoreServer) List(context.Context, *ListRequest) (*ListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedStoreServer) mustEmbedUnimplementedStoreServer() {}
 
@@ -83,6 +97,24 @@ func _Store_Fetch_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Store_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StoreServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/store.Store/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StoreServer).List(ctx, req.(*ListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Store_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "store.Store",
 	HandlerType: (*StoreServer)(nil),
@@ -90,6 +122,10 @@ var _Store_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Fetch",
 			Handler:    _Store_Fetch_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _Store_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

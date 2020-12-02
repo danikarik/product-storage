@@ -9,6 +9,7 @@ package store;
 
 service Store {
   rpc Fetch (FetchRequest) returns (FetchResponse) {}
+  rpc List (ListRequest) returns (ListResponse) {}
 }
 
 message FetchRequest {
@@ -17,4 +18,43 @@ message FetchRequest {
 
 message FetchResponse {
   int32 result = 1;
+}
+
+message Paging {
+  string last_id = 1;
+  int64 limit = 2;
+}
+
+enum Direction {
+  DESC = 0;
+  ASC = 1;
+}
+
+enum Field {
+  DEFAULT = 0;
+  NAME = 1;
+  PRICE = 2;
+  UPDATED = 3;
+}
+
+message Sorting {
+  Direction direction = 1;
+  Field field = 2;
+}
+
+message ListRequest {
+  Paging paging = 1;
+  Sorting sorting = 2;
+}
+
+message Product {
+  string name = 1;
+  double price = 2;
+  int64 num_of_changes = 3;
+  string last_update = 4;
+}
+
+message ListResponse {
+  string last_id = 1;
+  repeated Product products = 2;
 }
